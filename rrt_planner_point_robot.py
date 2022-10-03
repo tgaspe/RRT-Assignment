@@ -104,7 +104,10 @@ def lineFromPoints(p1,p2):
     x1 = p2[0]
     y1 = p2[1]
 
-    a = (y - y1)/(x - x1)
+    if (x - x1) == 0:
+        a = 0
+    else:
+        a = (y - y1)/(x - x1)
     b = y - a*x
 
     return [a,b]
@@ -112,11 +115,8 @@ def lineFromPoints(p1,p2):
 
 def pointPointDistance(p1,p2):
     # return distance p1 to p2
-    return sqrt( (p1[0] - p2[0])**2 + (p1[0] - p2[0])**2 )
+    return sqrt( (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2 )
 
-p1 = [0, 0]
-p2 = [0,5]
-print(pointPointDistance(p1, p2))
 
 def takeSecond(elem):
     return elem[0]
@@ -154,6 +154,14 @@ def closestPointToPoint(G,p2):
     #return vertex index
     return closest_node
 
+def inRect(p,rect,dilation):
+   """ Return 1 in p is inside rect, dilated by dilation (for edge cases). """
+   if p[0]<rect[0]-dilation: return 0   # x < r_x1
+   if p[1]<rect[1]-dilation: return 0   # y < r_y1
+   if p[0]>rect[2]+dilation: return 0   # x > r_x2
+   if p[1]>rect[3]+dilation: return 0   # y > r_y2
+   return 1
+
 def lineHitsRect(p1,p2,r):
     #TODO
     dilation = 0
@@ -161,19 +169,26 @@ def lineHitsRect(p1,p2,r):
     line = lineFromPoints(p1, p2)
     a = line[0]
     b = line[1]
+
+    print("line: a: " + str(a) + " b: " + str(b))
     #Getting rectangle
     x = r[0]
     y = r[1]
     x1 = r[2]
     y1 = r[3]
 
-    p1_rect = [x,y]
-    p2_rect = [x1, y1]
+    p1_rect = [x,y1]
+    p2_rect = [x1, y]
 
     rect_diagonal = lineFromPoints(p1_rect, p2_rect)
+    print("diagonal: a: " + str(rect_diagonal[0]) + " b: " + str(rect_diagonal[1]))
+
 
     interception_x = (rect_diagonal[1]- b)/ (a - rect_diagonal[0])
     interception_y = a * interception_x + b
+    
+    print("interception x: " + str(interception_x) + " y: " + str(interception_y))
+    
     inter_point = [interception_x,interception_y]
 
     if inRect(inter_point, r, dilation) == 1:
@@ -181,24 +196,14 @@ def lineHitsRect(p1,p2,r):
     
     return False
 
-#def inRect(p,rect,dilation):
-#    """ Return 1 in p is inside rect, dilated by dilation (for edge cases). """
-#    #TODO
+#p1 = [0, 0]
+#p2 = [1.9, 1]
+#r = [2, 0, 3, 1]
+#print("Line hits rect? " + str(lineHitsRect(p1, p2, r)))
 
-#    return False
 
-def inRect(p,rect,dilation):
-   """ Return 1 in p is inside rect, dilated by dilation (for edge cases). """
-   if p[0]<rect[0]-dilation: return 0
-   if p[1]<rect[1]-dilation: return 0
-   if p[0]>rect[2]+dilation: return 0
-   if p[1]>rect[3]+dilation: return 0
-   return 1
+def newPoint(p1,p2,stepsize):
 
-def addNewPoint(p1,p2,stepsize):
-
-    global G
-    
     # Calculate line from points
     line = lineFromPoints(p1, p2)
     # Get angle
@@ -208,20 +213,20 @@ def addNewPoint(p1,p2,stepsize):
     new_y = p1[1] + (stepsize * math.sin(angle))
     
     new_point = [new_x, new_y]
+
+    return new_point
     # check if can add i.e not in rect
-    if lineHitsRect(p1, new_point) == False:
+    #if lineHitsRect(p1, new_point) == False:
         
-        nodeID = pointToVertex(new_point)   # Add new point to vertices list
-        G[nodes].append(nodeID)             # Add to nodeID in G[nodes]
-        G[edges].append([])
+        #nodeID = pointToVertex(new_point)   # Add new point to vertices list
+        #G[nodes].append(nodeID)             # Add to nodeID in G[nodes]
+        #G[edges].append([])
         
         # add to Edge [closest node, new node]
-        
-        
-        
-        return nodeID
-    else:
-        return -1
+
+       # return new_point
+    #else:
+    #    return -1
 
 
 
@@ -237,8 +242,9 @@ def rrt_search(G, tx, ty, canvas):
         p = genPoint()
 
         # This function must be defined by you to find the closest point in the existing graph to the guiding point
-        cp = closestPointToPoint(G,p)
-        v = addNewPoint(cp,p,SMALLSTEP)
+        cp = closestPointToPoint(G,p) # This function must return index of node
+        
+        new_p = newPoint(cp,p,SMALLSTEP) # -> gets [x, y]
 
         if visualize:
             # if nsteps%500 == 0: redraw()  # erase generated points now and then or it gets too cluttered
@@ -247,17 +253,23 @@ def rrt_search(G, tx, ty, canvas):
                 canvas.events()
                 n=0
 
-
+        hit = 0  # 0 -> no obstacle hit
         for o in obstacles:
             # The following function defined by you must handle the occlusion cases
-            if lineHitsRect(vertices[v],p,o) or inRect(p,o,1):
-                print ("TODO")
+            if lineHitsRect(vertices[cp],new_p,o) or inRect(new_p,o,1):
+                print ("New Point hits obstacle! Skipping to another point.")
+                hit = 1
+                break
                 
                 #... reject Skip this point
+        
+        if hit == 1: # obstacle hit
+            continue
 
-        k = pointToVertex( p )   # is the new vertex ID
+        k = pointToVertex( new_p )   # k is the new vertex ID, this add new point to vertices list
         G[nodes].append(k)
-        G[edges].append( (v,k) )
+        G[edges].append( (cp,k) )
+        
         if visualize:
             canvas.polyline(  [vertices[v], vertices[k] ]  )
 
@@ -312,7 +324,7 @@ def main():
         canvas.mainloop()
 
 if __name__ == '__main__':
-
+    ''' 
     args = utils.get_args()
     visualize = utils.get_args()
     drawInterval = 10  # 10 is good for normal real-time drawing
@@ -340,4 +352,6 @@ if __name__ == '__main__':
     nodes = 0
     edges = 1
 
-    #main()
+    main()
+     '''
+    
