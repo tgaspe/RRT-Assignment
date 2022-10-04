@@ -5,9 +5,9 @@
 
 from tkinter import *
 import _tkinter
-#from PIL import Image
-#from PIL import ImageTk
-#from PIL import ImageChops
+from PIL import Image
+from PIL import ImageTk
+from PIL import ImageChops
 import sys, os
 trace = 0
 MARK="marker"  # tag value for 'mark' item

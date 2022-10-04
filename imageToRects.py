@@ -1,6 +1,6 @@
 import sys
-#import PIL
-#import PIL.Image
+import PIL
+import PIL.Image
 
 # binarize image.
 # map everything below 254 to zero
