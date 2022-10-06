@@ -179,9 +179,9 @@ def inRect(p,rect,dilation):
    if p[1]>rect[3]+dilation: return 0   # y > r_y2
    return 1
 
-def lineHitsRect(p1,p2,r):
+def lineHitsRect(p1,p2,r, dilation):
     #TODO
-    dilation = 0
+    #dilation = 0
 
     line = lineFromPoints(p1, p2)
     a = line[0]
@@ -304,7 +304,7 @@ def rrt_search(G, tx, ty, canvas):
         hit = 0  # 0 -> no obstacle hit
         for o in obstacles:
             # The following function defined by you must handle the occlusion cases
-            if lineHitsRect(vertices[cp],new_p,o) or inRect(new_p,o,1):
+            if  inRect(new_p,o,1) or lineHitsRect(vertices[cp],new_p,o, 1):
                 print ("New Point hits obstacle! Skipping to another point.")
                 print("rectangele: " + str(o))
                 hit = 1
